@@ -25,6 +25,7 @@ for (i in 1:cross_count) {
     
     correct_testing<-predictions==testing_y #Find the rows which were correctly categorized for the testing examples
     accuracy[i]<-sum(correct_testing)/length(correct_testing) #Calculate the accuracy for the split
+
 }
 
 print(accuracy)

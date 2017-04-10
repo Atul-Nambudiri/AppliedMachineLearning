@@ -118,15 +118,13 @@ def main():
     plt.xlabel('Topics')
     plt.ylabel('Probability')
     plt.title('Probabilities with which topics are selected')
-    plt.show()
-    plt.figure()
+    plt.savefig('output/TopicsProbability.png')
 
-    for row in ps:
-        top_10 = np.argsort(row)[::-1][:10]
-        print(",".join([vocablines[i] for i in top_10]))
-    print(np.sum(ps))
-    print(np.sum(pis))
-    print(np.sum(w))
+    with open('output/TopWords.csv', 'w') as file:
+        for row in ps:
+            top_10 = np.argsort(row)[::-1][:10]
+            file.write(",".join([vocablines[i] for i in top_10]))
+            file.write('\n')
 
 if __name__ == '__main__':
     main()

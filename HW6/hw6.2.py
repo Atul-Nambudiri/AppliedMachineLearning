@@ -5,7 +5,7 @@ from math import log, exp
 import random
 import matplotlib.pyplot as plt
 import numpy as np
-
+import sys
 
 def e_step(pis, mus, x):
     diff = spatial.distance.cdist(x, mus, 'sqeuclidean')
@@ -20,9 +20,9 @@ def m_step(x, w, N):
     mus = np.transpose(x).dot(w)
     mus = mus / w.sum(axis = 0)
     mus = np.transpose(mus)
-    # mus = mus + 0.00001
-    # for i in xrange(w.shape[1]):
-    #     mus[i] = mus[i] / np.sum(mus[i])
+    mus = mus + 0.00001
+    for i in xrange(w.shape[1]):
+        mus[i] = mus[i] / np.sum(mus[i])
 
     pi = np.sum(w, axis = 0)
     pi = pi/N
@@ -45,34 +45,12 @@ def reshape_image(img, samples):
                 n_image[k][img.shape[1] * i + j] = img[i][j][k]
     return n_image
 
-def main():
-    n_clusters = 10
-    img = misc.imread('dataset/RobertMixed03.jpg')
-    original_shape = img.shape
-    samples = img.shape[0] * img.shape[1]
 
-    img = np.double(reshape_image(img, samples))
-    mean = np.mean(img, axis = 1)
-    mean = mean[:, np.newaxis]
-
-    img -= mean
-    #Scale to range of 0 - 1
-    img /= 255
-    
-    # cov = np.cov(img)
-    # img = cov * img * 
-
-    img = img.T
-
-    kmeans = KMeans(n_clusters=10, random_state=0)
-    kmeans.fit(img)
-
-    temp_labels = [random.randint(0, 9) for i in range(samples)]
-
+def run_em(img, n_clusters, samples, cluster_labels):
     cluster_mus = np.zeros((n_clusters, 3))
     cluster_weights = np.zeros((n_clusters))
 
-    for index, cluster in enumerate(kmeans.labels_):
+    for index, cluster in enumerate(cluster_labels):
         cluster_mus[cluster] += img[index]
         cluster_weights[cluster] += 1
 
@@ -85,36 +63,109 @@ def main():
 
     cluster_weights /= np.sum(cluster_weights)
 
-    for i in xrange(n_clusters):
-        cluster_mus[i] = cluster_mus[i] / np.sum(cluster_mus[i])
-
     w_old = np.zeros(1)
     w = np.ones(1)
 
     count = 0
-    while(not np.allclose(w,w_old) and count < 15):
+    while(not np.allclose(w,w_old) and count < 500):
         print("One Iteration - ", count)
         count += 1
         w_old = np.copy(w)
         w = e_step(cluster_weights, cluster_mus, img)
-        print(w)
         ps, cluster_weights = m_step(img, w, img.shape[0])
+
+    return w, cluster_mus
+
+def run_6_21():
+    n_clusters_list = [10, 20, 50]
+    images = ['RobertMixed03.jpg', 'smallstrelitzia.jpg', 'smallsunset.jpg']
+    for image_name in images:
+        for n_clusters in n_clusters_list:
+            print(image_name + " - " + str(n_clusters))
+            img = misc.imread('dataset/' + image_name)
+            original_shape = img.shape
+            samples = img.shape[0] * img.shape[1]
+
+            img = np.double(reshape_image(img, samples))
+            #Scale to range of 0 - 1
+
+            mean = np.mean(img, axis = 1)
+            mean = mean[:, np.newaxis]
+            img -= mean
+            img /= 25.5
+            img = img.T
+
+            kmeans = KMeans(n_clusters=n_clusters)
+            kmeans.fit(img)
+
+            w, cluster_mus = run_em(img, n_clusters, samples, kmeans.labels_)
+
+            for index, row in enumerate(w):
+                top = np.argsort(row)[-1]
+                img[index] = cluster_mus[top]
+
+            img = img.T
+            img *= 25.5
+            img += mean
+            img = revert_shape_image(img, original_shape)
+            img = img.astype(np.uint8)
+            fig = plt.figure()
+            ax = fig.add_subplot(1, 1, 1)
+            extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+            plt.axis('off')
+            plt.imshow(img)
+            plt.savefig('output/621-' + image_name + '-' + str(n_clusters) + '.png', bbox_inches=extent, pad_inches=0)
+
+def run_6_22():
+    total_labels = []
+    for count in range(10):
+        n_clusters = 20
+        image_name = 'dataset/smallsunset.jpg'
+        img = misc.imread(image_name)
+        original_shape = img.shape
+        samples = img.shape[0] * img.shape[1]
+
+        img = np.double(reshape_image(img, samples))
+        #Scale to range of 0 - 1
+
+        mean = np.mean(img, axis = 1)
+        mean = mean[:, np.newaxis]
+        img -= mean
+        img /= 25.5
+        img = img.T
+
+        kmeans = KMeans(n_clusters=n_clusters, random_state=count + 1)
+        kmeans.fit(img)
+
+        total_labels.append(kmeans.labels_)
+
+        w, cluster_mus = run_em(img, n_clusters, samples, kmeans.labels_)
 
         for index, row in enumerate(w):
             top = np.argsort(row)[-1]
             img[index] = cluster_mus[top]
 
-        print(img)
+        img = img.T
+        img *= 25.5
+        img += mean
+        img = revert_shape_image(img, original_shape)
+        img = img.astype(np.uint8)
+        fig = plt.figure()
+        ax = fig.add_subplot(1, 1, 1)
+        extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+        plt.axis('off')
+        plt.imshow(img)
+        plt.savefig('output/622-' + str(count) + '.png', bbox_inches=extent, pad_inches=0)
+        count += 1
 
-    img *= 255
-    img = img.T
-    img += mean
-    img = revert_shape_image(img, original_shape)
-    img = img.astype(np.uint8)
-    plt.imshow(img)
-    plt.savefig('testplot.png')
+    total_labels = np.array(total_labels)
+    print(np.vstack({tuple(row) for row in total_labels}))
+
+
+
+def main():
+    run_6_21()
+    run_6_22()
 
 if __name__ == '__main__':
     main()
-    
-

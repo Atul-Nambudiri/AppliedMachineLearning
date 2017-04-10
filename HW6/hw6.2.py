@@ -22,9 +22,6 @@ def m_step(x, w, N):
     mus = np.transpose(x).dot(w)
     mus = mus / w.sum(axis = 0)
     mus = np.transpose(mus)
-    mus = mus + 0.00001
-    for i in xrange(w.shape[1]):
-        mus[i] = mus[i] / np.sum(mus[i])
 
     pi = np.sum(w, axis = 0)
     pi = pi/N
@@ -69,17 +66,17 @@ def run_em(img, n_clusters, samples, cluster_labels):
     w = np.ones(1)
 
     count = 0
-    while(not np.allclose(w,w_old) and count < 200):
+    while(not np.allclose(w,w_old) and count < 1000):
         print("One Iteration - ", count)
         count += 1
         w_old = np.copy(w)
         w = e_step(cluster_weights, cluster_mus, img)
-        ps, cluster_weights = m_step(img, w, img.shape[0])
+        cluster_mus, cluster_weights = m_step(img, w, img.shape[0])
 
     return w, cluster_mus
 
 def run_6_21():
-    n_clusters_list = [50]
+    n_clusters_list = [10]
     images = ['RobertMixed03.jpg', 'smallstrelitzia.jpg', 'smallsunset.jpg']
     for image_name in images:
         for n_clusters in n_clusters_list:

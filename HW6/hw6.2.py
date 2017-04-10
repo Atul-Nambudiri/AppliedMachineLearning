@@ -1,6 +1,6 @@
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import normalize
-from scipy import misc
+from scipy import misc, spatial
 from math import log, exp
 import random
 import matplotlib.pyplot as plt
@@ -8,12 +8,12 @@ import numpy as np
 
 
 def e_step(pis, mus, x):
-    w = np.zeros((x.shape[0], len(pis)))
-    for i in xrange(x.shape[0]):
-        for j in xrange(len(pis)):
-            w[i][j] = exp(-.5 * np.sum(np.square(x[i] - mus[j]))) * pis[j]
-        s = np.sum(w[i])
-        w[i] /= s
+    diff = spatial.distance.cdist(x, mus, 'sqeuclidean')
+    w = np.exp(-.5 * diff)
+    w *= pis
+    s = np.sum(w, axis = 1)
+    s = s[:, np.newaxis]
+    w /= s
     return w
     
 def m_step(x, w, N):
@@ -55,9 +55,9 @@ def main():
     mean = np.mean(img, axis = 1)
     mean = mean[:, np.newaxis]
 
-    # img -= mean
+    img -= mean
     #Scale to range of 0 - 1
-    img /= 20
+    img /= 255
     
     # cov = np.cov(img)
     # img = cov * img * 
@@ -106,9 +106,9 @@ def main():
 
         print(img)
 
-    img *= 20
+    img *= 255
     img = img.T
-    # img += mean
+    img += mean
     img = revert_shape_image(img, original_shape)
     img = img.astype(np.uint8)
     plt.imshow(img)

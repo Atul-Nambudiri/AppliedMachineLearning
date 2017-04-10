@@ -3,6 +3,8 @@ from sklearn.preprocessing import normalize
 from scipy import misc, spatial
 from math import log, exp
 import random
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import sys
@@ -67,7 +69,7 @@ def run_em(img, n_clusters, samples, cluster_labels):
     w = np.ones(1)
 
     count = 0
-    while(not np.allclose(w,w_old) and count < 500):
+    while(not np.allclose(w,w_old) and count < 300):
         print("One Iteration - ", count)
         count += 1
         w_old = np.copy(w)

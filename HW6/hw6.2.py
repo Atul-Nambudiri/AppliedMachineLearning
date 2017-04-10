@@ -69,7 +69,7 @@ def run_em(img, n_clusters, samples, cluster_labels):
     w = np.ones(1)
 
     count = 0
-    while(not np.allclose(w,w_old) and count < 300):
+    while(not np.allclose(w,w_old) and count < 200):
         print("One Iteration - ", count)
         count += 1
         w_old = np.copy(w)
@@ -79,7 +79,7 @@ def run_em(img, n_clusters, samples, cluster_labels):
     return w, cluster_mus
 
 def run_6_21():
-    n_clusters_list = [10, 20, 50]
+    n_clusters_list = [50]
     images = ['RobertMixed03.jpg', 'smallstrelitzia.jpg', 'smallsunset.jpg']
     for image_name in images:
         for n_clusters in n_clusters_list:
@@ -167,7 +167,7 @@ def run_6_22():
 
 def main():
     run_6_21()
-    run_6_22()
+    #run_6_22()
 
 if __name__ == '__main__':
     main()

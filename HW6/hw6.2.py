@@ -11,8 +11,13 @@ import sys
 
 def e_step(pis, mus, x):
     diff = spatial.distance.cdist(x, mus, 'sqeuclidean')
-    w = np.exp(-.5 * diff)
-    w *= pis
+    w = -.5 * diff
+    w += np.log(pis)
+
+    m = np.max(w, axis = 1)
+    m = m[:, np.newaxis]
+    w = np.exp(w - m)
+
     s = np.sum(w, axis = 1)
     s = s[:, np.newaxis]
     w /= s
@@ -66,7 +71,7 @@ def run_em(img, n_clusters, samples, cluster_labels):
     w = np.ones(1)
 
     count = 0
-    while(not np.allclose(w,w_old) and count < 1000):
+    while(not np.allclose(w,w_old) and count < 500):
         print("One Iteration - ", count)
         count += 1
         w_old = np.copy(w)
@@ -76,8 +81,10 @@ def run_em(img, n_clusters, samples, cluster_labels):
     return w, cluster_mus
 
 def run_6_21():
-    n_clusters_list = [10]
-    images = ['RobertMixed03.jpg', 'smallstrelitzia.jpg', 'smallsunset.jpg']
+    # n_clusters_list = [10, 20, 50]
+    # images = ['RobertMixed03.jpg', 'smallstrelitzia.jpg', 'smallsunset.jpg']
+    n_clusters_list = [10, 20, 50]
+    images = ['smallstrelitzia.jpg', 'smallsunset.jpg']
     for image_name in images:
         for n_clusters in n_clusters_list:
             print(image_name + " - " + str(n_clusters))
@@ -91,7 +98,6 @@ def run_6_21():
             mean = np.mean(img, axis = 1)
             mean = mean[:, np.newaxis]
             img -= mean
-            img /= 25.5
             img = img.T
 
             kmeans = KMeans(n_clusters=n_clusters)
@@ -104,7 +110,6 @@ def run_6_21():
                 img[index] = cluster_mus[top]
 
             img = img.T
-            img *= 25.5
             img += mean
             img = revert_shape_image(img, original_shape)
             img = img.astype(np.uint8)
@@ -130,7 +135,6 @@ def run_6_22():
         mean = np.mean(img, axis = 1)
         mean = mean[:, np.newaxis]
         img -= mean
-        img /= 25.5
         img = img.T
 
         kmeans = KMeans(n_clusters=n_clusters, random_state=count + 1)
@@ -145,7 +149,6 @@ def run_6_22():
             img[index] = cluster_mus[top]
 
         img = img.T
-        img *= 25.5
         img += mean
         img = revert_shape_image(img, original_shape)
         img = img.astype(np.uint8)
@@ -164,7 +167,7 @@ def run_6_22():
 
 def main():
     run_6_21()
-    #run_6_22()
+    run_6_22()
 
 if __name__ == '__main__':
     main()

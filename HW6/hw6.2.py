@@ -81,10 +81,8 @@ def run_em(img, n_clusters, samples, cluster_labels):
     return w, cluster_mus
 
 def run_6_21():
-    # n_clusters_list = [10, 20, 50]
-    # images = ['RobertMixed03.jpg', 'smallstrelitzia.jpg', 'smallsunset.jpg']
     n_clusters_list = [10, 20, 50]
-    images = ['smallstrelitzia.jpg', 'smallsunset.jpg']
+    images = ['RobertMixed03.jpg', 'smallstrelitzia.jpg', 'smallsunset.jpg']
     for image_name in images:
         for n_clusters in n_clusters_list:
             print(image_name + " - " + str(n_clusters))

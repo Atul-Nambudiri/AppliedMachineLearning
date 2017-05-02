@@ -130,28 +130,31 @@ def main(_):
   # Build the graph for the deep net
   y_conv, keep_prob = deepnn(x)
 
-  cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=y_conv))
+  cross_entropy = tf.reduce_mean(
+      tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=y_conv))
   train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
   correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(y_, 1))
   accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-  tf.summary.scalar('accuracy', accuracy)
 
-  train_writer = tf.summary.FileWriter(FLAGS.summaries_dir + '/train',
-                                      sess.graph)
-  # test_writer = tf.summary.FileWriter(FLAGS.summaries_dir + '/test')
+  summary_writer = tf.summary.FileWriter(FLAGS.log_dir + '/summary')
 
   with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
     for i in range(20000):
       batch = mnist.train.next_batch(50)
       if i % 100 == 0:
-        with tf.name_scope('accuracy'):
-          train_accuracy = accuracy.eval(feed_dict={x: batch[0], y_: batch[1], keep_prob: 1.0})
-        tf.summary.scalar('accuracy', accuracy)
+        train_accuracy = accuracy.eval(feed_dict={x: batch[0], y_: batch[1], keep_prob: 1.0})
+        test_accuracy = accuracy.eval(feed_dict={x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0})
+        tf.summary.scalar('train_accuracy', train_accuracy)
+        tf.summary.scalar('test_accuracy', test_accuracy)
+        merged = tf.summary.merge_all()
+        summary_writer.add_summary(merged, i)
         print('step %d, training accuracy %g' % (i, train_accuracy))
+        print('step %d, test accuracy %g' % (i, test_accuracy))
       train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
 
-    print('test accuracy %g' % accuracy.eval(feed_dict={x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0}))
+    print('test accuracy %g' % accuracy.eval(feed_dict={
+        x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0}))
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
@@ -161,7 +164,8 @@ if __name__ == '__main__':
   parser.add_argument(
       '--log_dir',
       type=str,
-      default='/tmp/tensorflow/mnist/logs/mnist_with_summaries',
+      default='/tmp/tensorflow/mnist_deep/logs/mnist_with_summaries',
       help='Summaries log directory')
+  FLAGS, unparsed = parser.parse_known_args()
   FLAGS, unparsed = parser.parse_known_args()
   tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)

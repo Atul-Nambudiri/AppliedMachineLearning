@@ -56,9 +56,11 @@ minIndex = -1
 
 for k in range (0, 500):
     oldpiCount = 784
+    count = 0
     print k
-    while(oldpiCount != 0):
+    while(oldpiCount != 0 and count < 300):
         oldpiCount = 0
+        count = count + 1
         for i in range(0, 28):
             for j in range(0, 28):
                 up_num = 0
@@ -74,31 +76,31 @@ for k in range (0, 500):
                 right_denom2 = 0
                 left_denom2 = 0
 
-                mine_num = theta1 * (2 * oldpi[k][i][j] - 1) + theta2 * randomizedImages[k][i][j]
-                mine_denom1 = (-1 * theta1) * (2 * oldpi[k][i][j] - 1) + (-1 * theta2) * randomizedImages[k][i][j]
+                mine_num = theta2 * randomizedImages[k][i][j]
+                mine_denom1 = (-1 * theta2) * randomizedImages[k][i][j]
                 mine_denom2 = mine_num
 
                 if j + 1 < 28:
-                    up_num = theta1 * (2 * oldpi[k][i][j+1] - 1) + theta2 * randomizedImages[k][i][j+1]
-                    up_denom1 = (-1 * theta1) * (2 * oldpi[k][i][j+1] - 1) + (-1 * theta2) * randomizedImages[k][i][j+1]
+                    up_num = theta1 * (2 * oldpi[k][i][j+1] - 1)
+                    up_denom1 = (-1 * theta1) * (2 * oldpi[k][i][j+1] - 1) 
                     up_denom2 = up_num
                 if j - 1 >= 0:
-                    down_num = theta1 * (2 * oldpi[k][i][j-1] - 1) + theta2 * randomizedImages[k][i][j-1]
-                    down_denom1 = (-1 * theta1) * (2 * oldpi[k][i][j-1] - 1) + (-1 * theta2) * randomizedImages[k][i][j-1]
+                    down_num = theta1 * (2 * oldpi[k][i][j-1] - 1)
+                    down_denom1 = (-1 * theta1) * (2 * oldpi[k][i][j-1] - 1)
                     down_denom2 = down_num
                 if i + 1 < 28:
-                    right_num = theta1 * (2 * oldpi[k][i+1][j]) + theta2 * randomizedImages[0][i+1][j]
-                    right_denom1 = (-1 * theta1) * (2 * oldpi[k][i+1][j] - 1) + (-1 * theta2) * randomizedImages[k][i+1][j]
+                    right_num = theta1 * (2 * oldpi[k][i+1][j])
+                    right_denom1 = (-1 * theta1) * (2 * oldpi[k][i+1][j] - 1)
                     right_denom2 = right_num
 
                 if i - 1 < 28:
-                    left_num = theta1 * (2 * oldpi[k][i-1][j] - 1) + theta2 * randomizedImages[k][i-1][j]
-                    left_denom1 = (-1 * theta1) * (2 * oldpi[k][i-1][j] - 1) + (-1 * theta2) * randomizedImages[k][i-1][j]
+                    left_num = theta1 * (2 * oldpi[k][i-1][j] - 1)
+                    left_denom1 = (-1 * theta1) * (2 * oldpi[k][i-1][j] - 1) 
                     left_denom2 = left_num
                 oldpi[k][i][j] = pi[k][i][j]
                 pi[k][i][j] = (np.exp(mine_num + up_num + down_num + right_num + left_num))/(np.exp(mine_denom1 + up_denom1 + down_denom1 + right_denom1 + left_denom1) + np.exp(mine_denom2 + up_denom2 + down_denom2 + right_denom2 + left_denom2))
                 
-                if abs(pi[k][i][j] - oldpi[k][i][j]) > .00000001:
+                if abs(pi[k][i][j] - oldpi[k][i][j]) > .0000000001:
                     oldpiCount = oldpiCount + 1
     currAcc = 0
     for i in range(0, 28):
@@ -117,22 +119,28 @@ for k in range (0, 500):
         minIndex = k
     totalAcc = totalAcc + currAcc
 
+plt.figure(1)
 plt.imshow(normalImages[maxIndex])
-plt.show()
+plt.savefig('most-original.png', bbox_inches='tight')
+plt.figure(2)
 plt.imshow(randomizedImages[maxIndex])
-plt.show()
+plt.savefig('most-noisy.png', bbox_inches='tight')
+plt.figure(3)
 plt.imshow(updatedImages[maxIndex])
-plt.show()
+plt.savefig('most-reconstructed.png', bbox_inches='tight')
+plt.figure(4)
 plt.imshow(normalImages[minIndex])
-plt.show()
+plt.savefig('least-original.png', bbox_inches='tight')
+plt.figure(5)
 plt.imshow(randomizedImages[minIndex])
-plt.show()
+plt.savefig('least-noisy.png', bbox_inches='tight')
+plt.figure(6)
 plt.imshow(updatedImages[minIndex])
-plt.show()
+plt.savefig('least-reconstructed.png', bbox_inches='tight')
 
 print("maxAcc ", maxAcc/784.0)
 print("minAcc ", minAcc/784.0)
 print("totalAcc ", totalAcc/392000.0)
 
-
-        
+print("Max Index ", maxIndex)
+print("Min Index ", minIndex)

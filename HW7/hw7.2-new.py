@@ -49,7 +49,7 @@ for i in range(0, 500):
                     oldpi[i][j][k] = 1
                     pi[i][j][k] = 1
 
-c = [-.8, -.4, .2, .5, .8]
+c = [-.8, -.4, 0, .4, .8]
 theta2 = 2
 oldpiCount = 784
 minAcc = 1000
@@ -58,8 +58,10 @@ totalAcc = 0
 maxIndex = -1
 minIndex = -1
 
-true_positives = np.zeros((5, 500))
-false_positives = np.zeros((5, 500))
+true_positives = np.zeros(5)
+false_positives = np.zeros(5)
+total_positives = np.zeros(5)
+total_negatives = np.zeros(5)
 
 for l in range (0, 5):
     for i in range(0, 500):
@@ -77,8 +79,10 @@ for l in range (0, 5):
     for k in range (0, 500):
         oldpiCount = 784
         print k
-        while(oldpiCount != 0):
+        count = 0
+        while(oldpiCount != 0 and count < 100):
             oldpiCount = 0
+            count += 1
             for i in range(0, 28):
                 for j in range(0, 28):
                     up_num = 0
@@ -94,31 +98,31 @@ for l in range (0, 5):
                     right_denom2 = 0
                     left_denom2 = 0
 
-                    mine_num = theta2 * (2 * oldpi[k][i][j] - 1) + c[l] * randomizedImages[k][i][j]
-                    mine_denom1 = (-1 * theta2) * (2 * oldpi[k][i][j] - 1) + (-1 * c[l]) * randomizedImages[k][i][j]
+                    mine_num = theta2 * randomizedImages[k][i][j]
+                    mine_denom1 = (-1 * theta2) * randomizedImages[k][i][j]
                     mine_denom2 = mine_num
 
                     if j + 1 < 28:
-                        up_num = theta2 * (2 * oldpi[k][i][j+1] - 1) + c[l] * randomizedImages[k][i][j+1]
-                        up_denom1 = (-1 * theta2) * (2 * oldpi[k][i][j+1] - 1) + (-1 * c[l]) * randomizedImages[k][i][j+1]
+                        up_num = c[l] * (2 * oldpi[k][i][j+1] - 1) 
+                        up_denom1 = (-1 * c[l]) * (2 * oldpi[k][i][j+1] - 1) 
                         up_denom2 = up_num
                     if j - 1 >= 0:
-                        down_num = theta2 * (2 * oldpi[k][i][j-1] - 1) + c[l] * randomizedImages[k][i][j-1]
-                        down_denom1 = (-1 * theta2) * (2 * oldpi[k][i][j-1] - 1) + (-1 * c[l]) * randomizedImages[k][i][j-1]
+                        down_num = c[l] * (2 * oldpi[k][i][j-1] - 1) 
+                        down_denom1 = (-1 * c[l]) * (2 * oldpi[k][i][j-1] - 1) 
                         down_denom2 = down_num
                     if i + 1 < 28:
-                        right_num = theta2 * (2 * oldpi[k][i+1][j]) + c[l] * randomizedImages[0][i+1][j]
-                        right_denom1 = (-1 * theta2) * (2 * oldpi[k][i+1][j] - 1) + (-1 * c[l]) * randomizedImages[k][i+1][j]
+                        right_num = c[l] * (2 * oldpi[k][i+1][j])
+                        right_denom1 = (-1 * c[l]) * (2 * oldpi[k][i+1][j] - 1)
                         right_denom2 = right_num
 
                     if i - 1 < 28:
-                        left_num = theta2 * (2 * oldpi[k][i-1][j] - 1) + c[l] * randomizedImages[k][i-1][j]
-                        left_denom1 = (-1 * theta2) * (2 * oldpi[k][i-1][j] - 1) + (-1 * c[l]) * randomizedImages[k][i-1][j]
+                        left_num = c[l] * (2 * oldpi[k][i-1][j] - 1)
+                        left_denom1 = (-1 * c[l]) * (2 * oldpi[k][i-1][j] - 1)
                         left_denom2 = left_num
                     oldpi[k][i][j] = pi[k][i][j]
                     pi[k][i][j] = (np.exp(mine_num + up_num + down_num + right_num + left_num))/(np.exp(mine_denom1 + up_denom1 + down_denom1 + right_denom1 + left_denom1) + np.exp(mine_denom2 + up_denom2 + down_denom2 + right_denom2 + left_denom2))
                     
-                    if abs(pi[k][i][j] - oldpi[k][i][j]) > .01:
+                    if abs(pi[k][i][j] - oldpi[k][i][j]) > .0000000001:
                         oldpiCount = oldpiCount + 1
         currAcc = 0
         for i in range(0, 28):
@@ -137,26 +141,26 @@ for l in range (0, 5):
             minIndex = k
         totalAcc = totalAcc + currAcc
 
-        positives = 0
-        negatives = 0
-
         for i in range(0, 28):
             for j in range(0, 28):
                 if normalImages[k][i][j] == 1:
-                    positives += 1
+                    total_positives[l] += 1
                     if updatedImages[k][i][j] == 1:
-                        true_positives[l][k] += 1
+                        true_positives[l] += 1
                 if normalImages[k][i][j] == -1:
-                    negatives += 1
+                    total_negatives[l] += 1
                     if updatedImages[k][i][j] == 1:
-                        false_positives[l][k] += 1
-        true_positives[l] /= positives
-        false_positives[l] /= negatives
+                        false_positives[l] += 1
+
+true_positives /= total_positives
+false_positives /= total_negatives
 
 plt.figure()
-plt.plot(true_positives[0], false_positives[0])
-plt.plot(true_positives[1], false_positives[1])
-plt.plot(true_positives[2], false_positives[2])
-plt.plot(true_positives[3], false_positives[3])
-plt.plot(true_positives[4], false_positives[4])
-plt.show()
+plt.scatter(false_positives, true_positives, s=80, facecolors='none', edgecolors='r')
+plt.plot([0, 1], [0, 1], color='navy', linestyle='--')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.savefig('roc-curve.png', bbox_inches='tight')
+
+print(true_positives)
+print(false_positives)

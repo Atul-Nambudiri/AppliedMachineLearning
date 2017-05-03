@@ -130,8 +130,7 @@ def main(_):
   # Build the graph for the deep net
   y_conv, keep_prob = deepnn(x)
 
-  cross_entropy = tf.reduce_mean(
-      tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=y_conv))
+  cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=y_conv))
   train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
   correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(y_, 1))
   accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
@@ -143,7 +142,7 @@ def main(_):
 
   with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
-    for i in range(20000):
+    for i in range(2000):
       batch = mnist.train.next_batch(50)
       if i % 100 == 0:
         train_accuracy, train_summary = sess.run([accuracy, training_summary], feed_dict={x: batch[0], y_: batch[1], keep_prob: 1.0})
@@ -171,6 +170,5 @@ if __name__ == '__main__':
       type=str,
       default='/tmp/tensorflow/mnist_deep/logs/mnist_with_summaries',
       help='Summaries log directory')
-  FLAGS, unparsed = parser.parse_known_args()
   FLAGS, unparsed = parser.parse_known_args()
   tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)

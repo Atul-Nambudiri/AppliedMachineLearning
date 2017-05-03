@@ -138,7 +138,8 @@ def main(_):
 
   training_summary = tf.summary.scalar("training_accuracy", accuracy)
   testing_summary = tf.summary.scalar("testing_accuracy", accuracy)
-  summary_writer = tf.summary.FileWriter(FLAGS.log_dir + '/summary')
+  train_writer = tf.summary.FileWriter(FLAGS.log_dir + '/train')
+  test_writer = tf.summary.FileWriter(FLAGS.log_dir + '/test')
 
   with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
@@ -146,10 +147,10 @@ def main(_):
       batch = mnist.train.next_batch(50)
       if i % 100 == 0:
         train_accuracy, train_summary = sess.run([accuracy, training_summary], feed_dict={x: batch[0], y_: batch[1], keep_prob: 1.0})
-        summary_writer.add_summary(train_summary, i) 
+        train_writer.add_summary(train_summary, i) 
 
         test_accuracy, test_summary = sess.run([accuracy, testing_summary], feed_dict={x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0})
-        summary_writer.add_summary(test_summary, i)
+        test_writer.add_summary(test_summary, i)
 
         print('step %d, training accuracy %g' % (i, train_accuracy))
         print('step %d, test accuracy %g' % (i, test_accuracy))
@@ -157,7 +158,8 @@ def main(_):
 
     print('test accuracy %g' % accuracy.eval(feed_dict={
         x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0}))
-  summary_writer.close()
+  test_writer.close()
+  train_writer.close()
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()

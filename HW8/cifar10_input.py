@@ -171,7 +171,7 @@ def distorted_inputs(data_dir, batch_size):
   distorted_image = tf.random_crop(reshaped_image, [height, width, 3])
 
   # Randomly flip the image horizontally.
-  distorted_image = tf.image.random_flip_left_right(reshaped_image)
+  distorted_image = tf.image.random_flip_left_right(distorted_image)
 
   # Because these operations are not commutative, consider randomizing
   # the order their operation.
@@ -188,7 +188,7 @@ def distorted_inputs(data_dir, batch_size):
   read_input.label.set_shape([1])
 
   # Ensure that the random shuffling has good mixing properties.
-  min_fraction_of_examples_in_queue = 0.4 #########################################################################################################################
+  min_fraction_of_examples_in_queue = 0.4
   min_queue_examples = int(NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN *
                            min_fraction_of_examples_in_queue)
   print ('Filling queue with %d CIFAR images before starting to train. '

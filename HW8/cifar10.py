@@ -66,7 +66,7 @@ NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = cifar10_input.NUM_EXAMPLES_PER_EPOCH_FOR_EVAL
 MOVING_AVERAGE_DECAY = 0.9999     # The decay to use for the moving average.
 NUM_EPOCHS_PER_DECAY = 350.0      # Epochs after which learning rate decays.
 LEARNING_RATE_DECAY_FACTOR = 0.1  # Learning rate decay factor.
-INITIAL_LEARNING_RATE = 0.1       # Initial learning rate.
+INITIAL_LEARNING_RATE = 0.001      # Initial learning rate.
 
 # If a model is trained with multiple GPUs, prefix all Op names with tower_name
 # to differentiate the operations. Note that this prefix is removed from the
@@ -199,74 +199,143 @@ def inference(images):
   # If we only ran this model on a single GPU, we could simplify this function
   # by replacing all instances of tf.get_variable() with tf.Variable().
   #
-  # conv1
+  # Layer 1/2
   with tf.variable_scope('conv1') as scope:
     kernel = _variable_with_weight_decay('weights',
-                                         shape=[5, 5, 3, 64],
+                                         shape=[3, 3, 3, 96],
                                          stddev=5e-2,
                                          wd=0.0)
-    conv = tf.nn.conv2d(images, kernel, [1, 1, 1, 1], padding='SAME')
-    biases = _variable_on_cpu('biases', [64], tf.constant_initializer(0.0))
+    padded_input = tf.pad(images, [[0, 0], [1, 1], [1, 1], [0, 0]], "CONSTANT")
+    conv = tf.nn.conv2d(padded_input, kernel, [1, 1, 1, 1], padding='VALID')
+    biases = _variable_on_cpu('biases', [96], tf.constant_initializer(0.0))
     pre_activation = tf.nn.bias_add(conv, biases)
-    conv1 = tf.nn.relu(pre_activation, name=scope.name)
-    _activation_summary(conv1)
+    conv1 = tf.nn.relu(pre_activation, name='conv1')
 
-  # pool1
-  pool1 = tf.nn.max_pool(conv1, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1],
-                         padding='SAME', name='pool1')
-  # norm1
-  norm1 = tf.nn.lrn(pool1, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75,
-                    name='norm1')
-
-  # conv2
+  # Layer 3/4
   with tf.variable_scope('conv2') as scope:
     kernel = _variable_with_weight_decay('weights',
-                                         shape=[5, 5, 64, 64],
+                                         shape=[3, 3, 96, 96],
                                          stddev=5e-2,
                                          wd=0.0)
-    conv = tf.nn.conv2d(norm1, kernel, [1, 1, 1, 1], padding='SAME')
-    biases = _variable_on_cpu('biases', [64], tf.constant_initializer(0.1))
+    padded_input = tf.pad(conv1, [[0, 0], [1, 1], [1, 1], [0, 0]], "CONSTANT")
+    conv = tf.nn.conv2d(padded_input, kernel, [1, 1, 1, 1], padding='VALID')
+    biases = _variable_on_cpu('biases', [96], tf.constant_initializer(0.0))
     pre_activation = tf.nn.bias_add(conv, biases)
-    conv2 = tf.nn.relu(pre_activation, name=scope.name)
-    _activation_summary(conv2)
+    conv2 = tf.nn.relu(pre_activation, name='conv2')
 
-  # norm2
-  norm2 = tf.nn.lrn(conv2, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75,
-                    name='norm2')
-  # pool2
-  pool2 = tf.nn.max_pool(norm2, ksize=[1, 3, 3, 1],
-                         strides=[1, 2, 2, 1], padding='SAME', name='pool2')
+  # Layer 5/6
+  with tf.variable_scope('conv3') as scope:
+    kernel = _variable_with_weight_decay('weights',
+                                         shape=[3, 3, 96, 96],
+                                         stddev=5e-2,
+                                         wd=0.0)
+    padded_input = tf.pad(conv2, [[0, 0], [1, 1], [1, 1], [0, 0]], "CONSTANT")
+    conv = tf.nn.conv2d(padded_input, kernel, [1, 1, 1, 1], padding='VALID')
+    biases = _variable_on_cpu('biases', [96], tf.constant_initializer(0.0))
+    pre_activation = tf.nn.bias_add(conv, biases)
+    conv3 = tf.nn.relu(pre_activation, name='conv3')
 
-  # local3
-  with tf.variable_scope('local3') as scope:
-    # Move everything into depth so we can perform a single matrix multiply.
-    reshape = tf.reshape(pool2, [FLAGS.batch_size, -1])
-    dim = reshape.get_shape()[1].value
-    weights = _variable_with_weight_decay('weights', shape=[dim, 384],
-                                          stddev=0.04, wd=0.004)
-    biases = _variable_on_cpu('biases', [384], tf.constant_initializer(0.1))
-    local3 = tf.nn.relu(tf.matmul(reshape, weights) + biases, name=scope.name)
-    _activation_summary(local3)
+  # Layer 7
+  dropout1 = tf.nn.dropout(conv3, 0.2, name='dropout1')
 
-  # local4
-  with tf.variable_scope('local4') as scope:
-    weights = _variable_with_weight_decay('weights', shape=[384, 192],
-                                          stddev=0.04, wd=0.004)
-    biases = _variable_on_cpu('biases', [192], tf.constant_initializer(0.1))
-    local4 = tf.nn.relu(tf.matmul(local3, weights) + biases, name=scope.name)
-    _activation_summary(local4)
+  # Layer 8
+  padded_input = tf.pad(dropout1, [[0, 0], [1, 0], [1, 0], [0, 0]], "CONSTANT")
+  pool1 = tf.nn.max_pool(padded_input, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='VALID', name='pool1')
 
+  # Layer 9/10
+  with tf.variable_scope('conv4') as scope:
+    kernel = _variable_with_weight_decay('weights',
+                                         shape=[3, 3, 96, 192],
+                                         stddev=5e-2,
+                                         wd=0.0)
+    padded_input = tf.pad(pool1, [[0, 0], [1, 1], [1, 1], [0, 0]], "CONSTANT")
+    conv = tf.nn.conv2d(padded_input, kernel, [1, 1, 1, 1], padding='VALID')
+    biases = _variable_on_cpu('biases', [192], tf.constant_initializer(0.0))
+    pre_activation = tf.nn.bias_add(conv, biases)
+    conv4 = tf.nn.relu(pre_activation, name='conv4')
+
+  # Layer 11/12
+  with tf.variable_scope('conv5') as scope:
+    kernel = _variable_with_weight_decay('weights',
+                                         shape=[3, 3, 192, 192],
+                                         stddev=5e-2,
+                                         wd=0.0)
+    padded_input = tf.pad(conv4, [[0, 0], [1, 1], [1, 1], [0, 0]], "CONSTANT")
+    conv = tf.nn.conv2d(padded_input, kernel, [1, 1, 1, 1], padding='VALID')
+    biases = _variable_on_cpu('biases', [192], tf.constant_initializer(0.0))
+    pre_activation = tf.nn.bias_add(conv, biases)
+    conv5 = tf.nn.relu(pre_activation, name='conv5')
+
+  # Layer 13/14
+  with tf.variable_scope('conv6') as scope:
+    kernel = _variable_with_weight_decay('weights',
+                                         shape=[3, 3, 192, 192],
+                                         stddev=5e-2,
+                                         wd=0.0)
+    padded_input = tf.pad(conv5, [[0, 0], [1, 1], [1, 1], [0, 0]], "CONSTANT")
+    conv = tf.nn.conv2d(padded_input, kernel, [1, 1, 1, 1], padding='VALID')
+    biases = _variable_on_cpu('biases', [192], tf.constant_initializer(0.0))
+    pre_activation = tf.nn.bias_add(conv, biases)
+    conv6 = tf.nn.relu(pre_activation, name='conv6')
+
+  # Layer 15
+  dropout2 = tf.nn.dropout(conv6, 0.2, name='dropout2')
+
+  # Layer 16
+  padded_input = tf.pad(dropout2, [[0, 0], [1, 0], [1, 0], [0, 0]], "CONSTANT")
+  pool2 = tf.nn.max_pool(padded_input, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='VALID', name='pool2')
+
+  # Layer 17/18
+  with tf.variable_scope('conv7') as scope:
+    kernel = _variable_with_weight_decay('weights',
+                                         shape=[3, 3, 192, 384],
+                                         stddev=5e-2,
+                                         wd=0.0)
+    padded_input = tf.pad(pool2, [[0, 0], [1, 1], [1, 1], [0, 0]], "CONSTANT")
+    conv = tf.nn.conv2d(padded_input, kernel, [1, 1, 1, 1], padding='VALID')
+    biases = _variable_on_cpu('biases', [384], tf.constant_initializer(0.0))
+    pre_activation = tf.nn.bias_add(conv, biases)
+    conv7 = tf.nn.relu(pre_activation, name='conv7')
+
+  # Layer 19/20
+  with tf.variable_scope('conv8') as scope:
+    kernel = _variable_with_weight_decay('weights',
+                                         shape=[3, 3, 384, 384],
+                                         stddev=5e-2,
+                                         wd=0.0)
+    padded_input = tf.pad(conv7, [[0, 0], [1, 1], [1, 1], [0, 0]], "CONSTANT")
+    conv = tf.nn.conv2d(padded_input, kernel, [1, 1, 1, 1], padding='VALID')
+    biases = _variable_on_cpu('biases', [384], tf.constant_initializer(0.0))
+    pre_activation = tf.nn.bias_add(conv, biases)
+    conv8 = tf.nn.relu(pre_activation, name='conv8')
+
+  # Layer 21/22
+  with tf.variable_scope('conv9') as scope:
+    kernel = _variable_with_weight_decay('weights',
+                                         shape=[3, 3, 384, 384],
+                                         stddev=5e-2,
+                                         wd=0.0)
+    padded_input = tf.pad(conv8, [[0, 0], [1, 1], [1, 1], [0, 0]], "CONSTANT")
+    conv = tf.nn.conv2d(padded_input, kernel, [1, 1, 1, 1], padding='VALID')
+    biases = _variable_on_cpu('biases', [384], tf.constant_initializer(0.0))
+    pre_activation = tf.nn.bias_add(conv, biases)
+    conv9 = tf.nn.relu(pre_activation, name='conv9')
+
+  # Layer 23
+  dropout3 = tf.nn.dropout(conv9, 0.4, name='dropout3')
+
+  # Layer 24
+  pool3 = tf.nn.max_pool(dropout3, ksize=[1, 6, 6, 1], strides=[1, 2, 2, 1], padding='VALID', name='pool3')
+
+  reshape = tf.reshape(pool3, [-1, 384])
+  # Layer 25
   # linear layer(WX + b),
   # We don't apply softmax here because
   # tf.nn.sparse_softmax_cross_entropy_with_logits accepts the unscaled logits
   # and performs the softmax internally for efficiency.
-  with tf.variable_scope('softmax_linear') as scope:
-    weights = _variable_with_weight_decay('weights', [192, NUM_CLASSES],
-                                          stddev=1/192.0, wd=0.0)
-    biases = _variable_on_cpu('biases', [NUM_CLASSES],
-                              tf.constant_initializer(0.0))
-    softmax_linear = tf.add(tf.matmul(local4, weights), biases, name=scope.name)
-    _activation_summary(softmax_linear)
+  weights = _variable_with_weight_decay('weights', [384, NUM_CLASSES], stddev=1/384.0, wd=0.0)
+  biases = _variable_on_cpu('biases', [NUM_CLASSES], tf.constant_initializer(0.0))
+  softmax_linear = tf.add(tf.matmul(reshape, weights), biases, name='softmax')
 
   return softmax_linear
 

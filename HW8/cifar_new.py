@@ -282,7 +282,8 @@ def inference(images):
   dropout2 = tf.nn.dropout(conv6, 0.2, name='dropout2')
 
   # Layer 16
-  pool2 = tf.nn.max_pool(dropout2, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='VALID', name='pool2')
+  padded_input = tf.pad(dropout2, [[0, 0], [1, 0], [1, 0], [0, 0]], "CONSTANT")
+  pool2 = tf.nn.max_pool(padded_input, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='VALID', name='pool2')
 
   # Layer 17/18
   with tf.variable_scope('conv7') as scope:

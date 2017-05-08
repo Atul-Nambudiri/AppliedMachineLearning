@@ -169,12 +169,12 @@ def main(_):
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
   parser.add_argument('--data_dir', type=str,
-                      default='/tmp/tensorflow/mnist/input_data',
+                      default='/home/jpandoh/atul_cv/AppliedMachineLearning/HW8/data/mnist/',
                       help='Directory for storing input data')
   parser.add_argument(
       '--log_dir',
       type=str,
-      default='/tmp/tensorflow/mnist_deep/logs/mnist_with_summaries',
+      default='/home/jpandoh/atul_cv/AppliedMachineLearning/HW8/data/mnist',
       help='Summaries log directory')
   FLAGS, unparsed = parser.parse_known_args()
   tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
